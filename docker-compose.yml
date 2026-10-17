@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  deploy-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_VERSION: 20-slim
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # App port (adjust as needed)
+      - "9000:9000"  # Webhook port
+    volumes:
+      - repo_workspace:/workspace
+    environment:
+      REPO_URL: ${REPO_URL}
+      BRANCH: ${BRANCH:-main}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
+      WEBHOOK_PORT: 9000
+      NODE_ENV: ${NODE_ENV:-production}
+      # Add any other env vars your app needs here
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  repo_workspace:
+    driver: local
